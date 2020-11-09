@@ -3,7 +3,49 @@ import { Container, Card, Form, Button } from 'react-bootstrap';
 import { Formik, Field } from 'formik';
 import { FaUpload, FaRegCheckCircle } from 'react-icons/fa';
 import * as Yup from 'yup';
-import './demande.scss'
+import API from 'utils/api';
+import EndPoints from 'utils/endpoints';
+import './demande.scss';
+
+const initData = {
+  commercialName: '',
+  name: '',
+  email: '',
+  telephone: '',
+  ville: '',
+  domaine: '',
+  services: '',
+  precisez: '',
+  no_souhaitee: 0,
+
+  color: '',
+  site: '',
+  file_logo: null,
+  file_photo1: null,
+  file_photo2: null,
+  file_photo3: null,
+
+  lumineux1: '',
+  longueur1: 0,
+  hauteur1: 0,
+  positionnement1: '',
+  texte_flocage1: '',
+  couleur_texte1: '',
+
+  lumineux2: '',
+  longueur2: 0,
+  hauteur2: 0,
+  positionnement2: '',
+  texte_flocage2: '',
+  couleur_texte2: '',
+
+  lumineux3: '',
+  longueur3: 0,
+  hauteur3: 0,
+  positionnement3: '',
+  texte_flocage3: '',
+  couleur_texte3: ''
+}
 
 const DemandeSchema = Yup.object().shape({
   commercialName: Yup.string().required('Required'),
@@ -81,30 +123,30 @@ export const Demande = () => {
     let html = [];
     for(let i = 1; i < 4; i++){
       let element = <div style={{ display: noSouhaitee<i ? 'none': 'block' }} key={`demande_souhaitee_${i}`}>
-          <label>{`Lambrequin n°${i} : Lumineux`}</label><br/>
-          <label><Field type="radio" name={`lumineux${i+1}`} value="oui"/> Oui </label>
-          <label style={{marginLeft:'0.5em'}}><Field type="radio" name={`lumineux${i+1}`} value="non"/> Non</label><br/>
+          <label>{`Valance #${i}`}</label><br/>
+          <label>Luminous: <Field type="radio" name={`lumineux${i}`} value="oui"/> Yes </label>
+          <label style={{marginLeft:'0.5em'}}><Field type="radio" name={`lumineux${i}`} value="non"/> No</label><br/>
 
           <label className="demande-input">
-            {`Longueur Lambrequin n°${i}`}
-            <Field type="text" name={`longueur${i+1}`} className="demande-input"/></label>
+            {`Length:`}
+            <Field type="text" name={`longueur${i}`} className="demande-input"/></label>
 
           <label className="demande-input">
-            {`Hauteur Lambrequin n°${i}`}
-            <Field type="text" name={`hauteur${i+1}`} className="demande-input"/></label>
+            {`Height:`}
+            <Field type="text" name={`hauteur${i}`} className="demande-input"/></label>
 
-          <label className="demande-input">{`Positionnement du texte / logo n°${i}`}</label>
-          <label><Field type="radio" name={`positionnement${i+1}`} value="oui"/> Gauche</label>
-          <label style={{marginLeft:'0.5em'}}><Field type="radio" name={`positionnement${i+1}`} value="non"/> Milieu</label>
-          <label style={{marginLeft:'0.5em'}}><Field type="radio" name={`positionnement${i+1}`} value="non"/> Droite</label><br/>
+          <label className="demande-input">{`Text / Logo Alignment:`}</label>
+          <label><Field type="radio" name={`positionnement${i}`} value="left"/> Left</label>
+          <label style={{marginLeft:'0.5em'}}><Field type="radio" name={`positionnement${i}`} value="center"/> Center</label>
+          <label style={{marginLeft:'0.5em'}}><Field type="radio" name={`positionnement${i}`} value="right"/> Right</label><br/>
 
           <label className="demande-input">
             {`Texte (flocage) n°${i}`}
-            <Field type="text" name={`texte_flocage${i+1}`} className="demande-input"/></label>
+            <Field type="text" name={`texte_flocage${i}`} className="demande-input"/></label>
 
           <label className="demande-input">
             {`Couleur du texte n°${i}`}
-            <Field type="text" name={`couleur_texte${i+1}`} className="demande-input"/></label>
+            <Field type="text" name={`couleur_texte${i}`} className="demande-input"/></label>
 
           <div className="demande-invalid-container"></div>
           </div>
@@ -113,91 +155,126 @@ export const Demande = () => {
     return Object.values(html);
   }
 
+  const onSubmit = (data: any) => {
+    let data_quote = {...data};
+    let valance = [];
+
+    for(let i = 1; i < 4; i++){
+      let temp = {
+        lumineux:'',
+        longueur: '',
+        hauteur: '',
+        positionnement: '',
+        texte_flocage: '',
+        couleur_texte: '',
+      };
+      temp['lumineux'] = data_quote[`lumineux${i}`];
+      delete data_quote[`lumineux${i}`];
+      temp['longueur'] = data_quote[`longueur${i}`];
+      delete data_quote[`longueur${i}`];
+      temp['hauteur'] = data_quote[`hauteur${i}`];
+      delete data_quote[`hauteur${i}`];
+      temp['positionnement'] = data_quote[`positionnement${i}`];
+      delete data_quote[`positionnement${i}`];
+      temp['texte_flocage'] = data_quote[`texte_flocage${i}`];
+      delete data_quote[`texte_flocage${i}`];
+      temp['couleur_texte'] = data_quote[`couleur_texte${i}`];
+      delete data_quote[`couleur_texte${i}`];
+      if(noSouhaitee > 0 && noSouhaitee >= i) valance.push(temp)
+    }
+    data_quote['souhaitee_arr'] = [...valance]
+    console.log(data_quote['souhaitee_arr'])
+    const formData = new FormData();
+		Object.keys(data_quote).forEach( item => {
+      formData.append(item, data_quote[item]);
+    })
+    console.log(formData)
+    const res = sendQuote(formData);
+  }
+
+  const myFormRef:React.RefObject<HTMLFormElement> = React.createRef();
+
+  const sendQuote = (data: any) => {
+    const config = {
+      headers: {
+        'content-type': 'multipart/form-data',
+        },
+    }
+    API.post(EndPoints.QUOTE, data, config).then(res => {
+      myFormRef.current!.reset();
+      alert("Thank you for requesting a quote, we will contact you within 2 business days.");
+    })
+    .catch(error => {
+      alert(error.message);
+    });
+  }
+
   return (
     <Container className="demande-container">
-      <p className="demande-title">Demande de devis</p>
+      <p className="demande-title">Quote request</p>
       <Card >
         <Card.Body>
-          <Card.Title className="demande-card-title">Demande de devis</Card.Title>
-          <Card.Text className="mb-2 text-muted">Pour toute demande de devis, vous pouvez utiliser le formulaire ci-dessous. Notre équipe vous répondra dans les plus brefs délais.</Card.Text>
+          <Card.Title className="demande-card-title">Quote request</Card.Title>
+          <Card.Text className="mb-2 text-muted">For any quote request, you can use the form below. Our team will get back to you as soon as possible.</Card.Text>
 
           <Formik
-              initialValues={{
-                commercialName: '',
-                name: '',
-                email: '',
-                telephone: '',
-                ville: '',
-                domaine: '',
-                services: '',
-                precisez: '',
-                no_souhaitee: 0,
-                souhaitee_arr: [],
-                site: '',
-                file_logo: null,
-                file_photo1: null,
-                file_photo2: null,
-                file_photo3: null,
-              }}
+              initialValues={initData}
               validationSchema={DemandeSchema}
-              onSubmit={values => {
-                // same shape as initial values
-                alert('values');
-              }}
+              onSubmit={ onSubmit }
             >
-          {({ errors, isSubmitting, touched, values, setFieldValue }) => (
-            <Form style={{margin:'2em 0.5em 1em 0.5em'}}>
-              <Field type="text" name="commercialName" className="demande-input" placeholder="*Nom commercial" />
+          {({ errors, isSubmitting, touched, values, setFieldValue, handleSubmit }) => (
+            <Form style={{margin:'2em 0.5em 1em 0.5em'}} onSubmit = { handleSubmit } ref={myFormRef}>
+              <Field type="text" name="commercialName" className="demande-input" placeholder="*Company name" required={true}/>
               <div className="demande-invalid-container">
                 { touched.commercialName && errors.commercialName ? <p className="demande-invalid-text">Please enter a valid input</p>: null}
               </div>
 
-              <Field type="text" name="name" className="demande-input" placeholder="*Prénom / NOM" />
+              <Field type="text" name="name" className="demande-input" placeholder="*Fullname" required={true}/>
               <div className="demande-invalid-container">
                 { touched.name && errors.name ? <p className="demande-invalid-text">Please enter a valid input</p>: null}
               </div>
 
-              <Field type="email" name="email" className="demande-input" placeholder="*Email" />
+              <Field type="email" name="email" className="demande-input" placeholder="*Email" required={true}/>
               <div className="demande-invalid-container">
                 { touched.email && errors.email ? <p className="demande-invalid-text">Please enter a valid input</p>: null}
               </div>
 
-              <Field type="text" name="telephone" className="demande-input" placeholder="*Téléphone" />
+              <Field type="text" name="telephone" className="demande-input" placeholder="*Phone" required={true}/>
               <div className="demande-invalid-container">
                 { touched.telephone && errors.telephone ? <p className="demande-invalid-text">Please enter a valid input</p>: null}
               </div>
 
-              <Field type="text" name="ville + {{ index }}" className="demande-input" placeholder="*Ville" />
+              <Field type="text" name="ville" className="demande-input" placeholder="*City" required={true}/>
               <div className="demande-invalid-container">
                 { touched.ville && errors.ville ? <p className="demande-invalid-text">Please enter a valid input</p>: null}
               </div>
 
               <Field as="select" name="domaine" className="demande-input">
-                <option> - *Domaine d'activité - </option>
-                <option value='rest'>Restaurant / Café / Bar</option>
-                <option value='hotel'>Hôtel</option>
-                <option value='commerce'>Commerce</option>
-                <option value='agence'>Agence</option>
-                <option value='autre'>Autre</option>
+                <option> - *Field of activity - </option>
+                <option value='rest'>Restaurant / Cafe / Bar</option>
+                <option value='hotel'>Hotel</option>
+                <option value='commerce'>Store</option>
+                <option value='agence'>Agency</option>
+                <option value='autre'>Other</option>
               </Field>
               <div className="demande-invalid-container">
                 { touched.domaine && errors.domaine ? <p className="demande-invalid-text">Please enter a valid input</p>: null}
               </div>
 
               { values.domaine === 'autre' ?
-                <><Field type="text" name="precisez" className="demande-input" placeholder="*Précisez" />
+                <><Field type="text" name="precisez" className="demande-input" placeholder="*Précisez" required={true}/>
                   <div className="demande-invalid-container">
                     { touched.precisez && errors.precisez ? <p className="demande-invalid-text">Please enter a valid input</p>: null}
                     </div>
                 </>: null }
 
               <Field as="select" name="services" className="demande-input">
-                <option  key='demande_service_null'> - *Type de services souhaité - </option>
-                <option value='lambrequin' key='demande_service_lambrequin'>Lambrequin / Lambrequin lumineux</option>
-                <option value='vitrophanie' key='demande_service_vitrophanie'>Vitrophanie / Vitrophanie lumineuse</option>
+                <option  key='demande_service_null'> - *Type of service desired- </option>
+                <option value='lambrequin' key='demande_service_lambrequin'>Luminous Valance</option>
+                {/* <option value='vitrophanie' key='demande_service_vitrophanie'>Vitrophanie / Vitrophanie lumineuse</option>
                 <option value='flocage' key='demande_service_flocage'>Flocage / Flocage lumineux</option>
                 <option value='kakemono' key='demande_service_kakemono'>Kakemono / Kakemono lumineux</option>
-                <option value='store' key='demande_service_store'>Store / Pergola / Habillage de façade</option>
+                <option value='store' key='demande_service_store'>Store / Pergola / Habillage de façade</option> */}
               </Field>
               <div className="demande-invalid-container">
                 { touched.services && errors.services ? <p className="demande-invalid-text">Please enter a valid input</p>: null}
@@ -206,11 +283,11 @@ export const Demande = () => {
 
               { values.services === 'lambrequin' ?
                 <><Field as="select" name="no_souhaitee" className="demande-input" onChange={(e:any)=>changeNoSouhaitee(e, values)}>
-                  <option key='demande_service_0'> - *Type de services souhaité - </option>
+                  <option key='demande_service_0'> - *Quantity - </option>
                   <option value='1' key='demande_service_1'>1</option>
                   <option value='2' key='demande_service_2'>2</option>
                   <option value='3' key='demande_service_3'>3</option>
-                  <option value='4' key='demande_service_4'>4 ou plus</option>
+                  <option value='4' key='demande_service_4'>4 or more</option>
                   </Field>
                   <div className="demande-invalid-container">
                     { touched.no_souhaitee && errors.no_souhaitee ? <p className="demande-invalid-text">Please enter a valid input</p>: null}
@@ -218,18 +295,18 @@ export const Demande = () => {
                   {
                     renderSouhaitee()
                   }
-                  <Field type="text" name="site" className="demande-input" placeholder="Couleur lambrequin(s) ou Référence couleur" />
+                  <Field type="text" name="color" className="demande-input" placeholder="Valance Color or Reference"/>
                   <div className="demande-invalid-container"></div>
                 </>:
                 <>
                 </> }
 
-              <Field type="text" name="precisions" component="textarea" className="demande-input" placeholder="Précisions sur votre demande"/>
+              <Field type="text" name="precisions" component="textarea" className="demande-input" placeholder="More info about your request"/>
                 <div className="demande-invalid-container"></div>
 
-              <Field type="text" name="site" className="demande-input" placeholder="Site web" />
+              <Field type="text" name="site" className="demande-input" placeholder="Website"/>
 
-              {
+              {/*
                 file_arr.map( (item, index) => (
 
                   <div className="demande-file-container" key={`demande_file_${index}`}>
@@ -238,14 +315,17 @@ export const Demande = () => {
                       {file_label_arr[index]}</Button>
                       <label>{file_name_state_arr[index]}</label>
                       <input type="file" style={{display:'none'}} ref={file_ref_arr[index]}
-                        onChange={(e:any)=>{setFieldValue(file_arr[index], e.currentTarget.files[0]); setStates(index, e.currentTarget.files[0].name)}}/>
+                        onChange={(e:any)=>{
+                          setFieldValue(file_arr[index], e.currentTarget.files[0]);
+                          setStates(index, e.currentTarget.files[0].name)}
+                        }/>
                   </div>
 
                 ))
-              }
+              */}
 
               <div className="demande-invalid-container"></div>
-              <Button type="submit" variant='block' className="demande-submit" disabled={isSubmitting}>Envoyer</Button>
+              <Button type="submit" variant='block' className="demande-submit">Send</Button>
 
             </Form>
           )}

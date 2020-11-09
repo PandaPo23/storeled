@@ -9,12 +9,12 @@ export const References = () => {
   return (
     <Container className="references-container">
       <p className="references-title">
-        Store Led : Nos références
+        Store Led : Our references
       </p>
       <Row>
         {
           brandsData.map( (image, ind) => (
-            <Col md={3} key={`references_img_${ind}`}>
+            <Col md={3} sm={6} key={`references_img_${ind}`}>
               <img src={image} className="references-image" alt=''/>
             </Col>
           ))
